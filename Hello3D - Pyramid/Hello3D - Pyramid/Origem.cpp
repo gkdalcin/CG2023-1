@@ -35,16 +35,23 @@ int setupGeometry();
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
+// camera
+glm::vec3 cameraPos = glm::vec3(5.0f, 0.0f, 0.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 cameraUp = glm::vec3(5.0f, 1.0f, 0.0f);
+
 // Código fonte do Vertex Shader (em GLSL): ainda hardcoded
 const GLchar* vertexShaderSource = "#version 450\n"
 "layout (location = 0) in vec3 position;\n"
 "layout (location = 1) in vec3 color;\n"
 "uniform mat4 model;\n"
+"uniform mat4 view;\n"
+"uniform mat4 projection;\n"
 "out vec4 finalColor;\n"
 "void main()\n"
 "{\n"
 //...pode ter mais linhas de código aqui!
-"gl_Position = model * vec4(position, 1.0);\n"
+"gl_Position = projection * view * model * vec4(position, 1.0f);\n"
 "finalColor = vec4(color, 1.0);\n"
 "}\0";
 
@@ -111,20 +118,29 @@ int main()
 	GLuint VAO = setupGeometry();
 
 
-	glUseProgram(shaderID);
-
-	glm::mat4 model = glm::mat4(1); //matriz identidade;
-	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-	//
-	model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
-
-	glEnable(GL_DEPTH_TEST);
-
-
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
+		glUseProgram(shaderID);
+
+		glm::mat4 model = glm::mat4(1); //matriz identidade;
+		GLint modelLoc = glGetUniformLocation(shaderID, "model");
+		//
+		model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, FALSE, glm::value_ptr(model));
+
+		glm::mat4 view = glm::mat4(1.0f);
+		GLint viewLoc = glGetUniformLocation(shaderID, "view");
+		// view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		view = glm::lookAt(cameraPos, cameraFront, cameraUp);
+		glUniformMatrix4fv(viewLoc, 1, FALSE, glm::value_ptr(view));
+
+		glm::mat4 projection;
+		GLint projectionLoc = glGetUniformLocation(shaderID, "projection");
+		projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+		glUniformMatrix4fv(projectionLoc, 1, FALSE, glm::value_ptr(projection));
+
+		glEnable(GL_DEPTH_TEST);
 		// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
 		glfwPollEvents();
 
@@ -159,12 +175,12 @@ int main()
 		// Poligono Preenchido - GL_TRIANGLES
 		
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 18);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Chamada de desenho - drawcall
 		// CONTORNO - GL_LINE_LOOP
 		
-		glDrawArrays(GL_POINTS, 0, 18);
+		glDrawArrays(GL_POINTS, 0, 36);
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -185,25 +201,35 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
-		rotateX = true;
-		rotateY = false;
-		rotateZ = false;
+		cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
+		cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
+		cameraUp = glm::vec3(0.0f, 1.0f, 5.0f);
 	}
-
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
 	{
-		rotateX = false;
-		rotateY = true;
-		rotateZ = false;
+		cameraPos = glm::vec3(0.0f, 0.0f, -5.0f);
+		cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
+		cameraUp = glm::vec3(0.0f, 1.0f, -5.0f);
 	}
-
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
 	{
-		rotateX = false;
-		rotateY = false;
-		rotateZ = true;
+		cameraPos = glm::vec3(-5.0f, 0.0f, 0.0f);
+		cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
+		cameraUp = glm::vec3(-5.0f, 1.0f, 0.0f);
+	}
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+	{
+		cameraPos = glm::vec3(5.0f, 0.0f, 0.0f);
+		cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
+		cameraUp = glm::vec3(5.0f, 1.0f, 0.0f);
+	}
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+	{
+		cameraPos = glm::vec3(0.0f, 5.0f, 0.0f);
+		cameraFront = glm::vec3(0.0f, 0.0f, 0.0f);
+		cameraUp = glm::vec3(0.0f, 5.0f, 1.0f);
 	}
 
 
@@ -273,31 +299,63 @@ int setupGeometry()
 
 		//Base da pirâmide: 2 triângulos
 		//x    y    z    r    g    b
-		-0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
+		-5.0, -0.5, -5.0, 1.0, 0.0, 0.0,
+		-5.0, -0.5,  5.0, 0.0, 1.0, 0.0,
+		 5.0, -0.5, -5.0, 0.0, 0.0, 1.0,
+
+		 -5.0, -0.5, 5.0, 1.0, 1.0, 0.0,
+		  5.0, -0.5,  5.0, 0.0, 1.0, 1.0,
+		  5.0, -0.5, -5.0, 1.0, 0.0, 1.0,
+
+		  //Topo da pirâmide: 2 triângulos
+		//x    y    z    r    g    b
+		-0.5, 0.5, -0.5, 1.0, 0.0, 0.0,
+		-0.5, 0.5,  0.5, 1.0, 0.0, 0.0,
+		 0.5, 0.5, -0.5, 1.0, 0.0, 0.0,
+
+		 -0.5, 0.5, 0.5, 1.0, 0.0, 0.0,
+		  0.5, 0.5,  0.5, 1.0, 0.0, 0.0,
+		  0.5, 0.5, -0.5, 1.0, 0.0, 0.0,
+
+		  //Lado A: 2 triângulos
+		//x    y    z    r    g    b
+		-0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
+		0.5, 0.5,  -0.5, 0.0, 1.0, 0.0,
+		 -0.5, -0.5, -0.5, 0.0, 1.0, 0.0,
+
+		 0.5, 0.5, -0.5, 0.0, 1.0, 0.0,
+		  -0.5, -0.5,  -0.5, 0.0, 1.0, 0.0,
+		  0.5, -0.5, -0.5, 0.0, 1.0, 0.0,
+
+		  //Lado B: 2 triângulos
+		//x    y    z    r    g    b
+		0.5, 0.5, -0.5, 0.0, 0.0, 1.0,
+		0.5, 0.5,  0.5, 0.0, 0.0, 1.0,
+		 0.5, -0.5, -0.5, 0.0, 0.0, 1.0,
+
+		 0.5, -0.5, -0.5, 0.0, 0.0, 1.0,
+		  0.5, 0.5,  0.5, 0.0, 0.0, 1.0,
+		  0.5, -0.5, 0.5, 0.0, 0.0, 1.0,
+
+		  //Lado C: 2 triângulos
+		//x    y    z    r    g    b
+		-0.5, 0.5, 0.5, 1.0, 0.0, 1.0,
+		0.5, 0.5,  0.5, 1.0, 0.0, 1.0,
+		 0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
+
+		 0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
+		  -0.5, -0.5,  0.5, 1.0, 0.0, 1.0,
+		  -0.5, 0.5, 0.5, 1.0, 0.0, 1.0,
+
+		  //Lado D: 2 triângulos
+		//x    y    z    r    g    b
+		-0.5, 0.5, 0.5, 0.0, 1.0, 1.0,
 		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
-		 0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
+		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
 
-		 -0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-		  0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
-		  0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
-
-		 //
-		 -0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
-		  0.0,  0.5,  0.0, 1.0, 1.0, 0.0,
-		  0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
-
-		  -0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
-		  0.0,  0.5,  0.0, 1.0, 0.0, 1.0,
-		  -0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
-
-		   -0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-		  0.0,  0.5,  0.0, 1.0, 1.0, 0.0,
-		  0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-
-		   0.5, -0.5, 0.5, 0.0, 1.0, 1.0,
-		  0.0,  0.5,  0.0, 0.0, 1.0, 1.0,
-		  0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
-
+		 -0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
+		  -0.5, 0.5,  -0.5, 0.0, 1.0, 1.0,
+		  -0.5, 0.5, 0.5, 0.0, 1.0, 1.0,
 
 	};
 
